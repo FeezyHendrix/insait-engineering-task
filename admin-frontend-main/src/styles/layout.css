@@ -1,0 +1,223 @@
+html {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-regular);
+  background-color: var(--app-gray);
+}
+
+.page-container {
+  max-width: 1920px;
+}
+
+.side-container {
+  border-start-end-radius: 30px;
+}
+
+.max-h-page-scroll {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+.modal-overlay {
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #000c;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.modal-box {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  background: var(--app-white);
+  box-shadow: 0px 3px 20px 0px rgba(0, 0, 0, 0.1);
+  min-width: 40%;
+  max-width: 80%;
+  max-height: 70%;
+  overflow-y: hidden;
+  padding: 1rem;
+}
+
+table.rounded-corners {
+  border-spacing: 0;
+  border-collapse: separate;
+  border-radius: 12px;
+  background: var(--app-white);
+  box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.06);
+}
+
+thead.primary-style {
+  background: var(--app-blue);
+  color: var(--app-white);
+  font-size: 14px;
+  font-weight: 100;
+  padding: 20px;
+}
+
+tr {
+  height: 50px;
+}
+
+table.rounded-corners th:first-child {
+  border-start-start-radius: 20px;
+}
+
+table.rounded-corners th:last-child {
+  border-start-end-radius: 20px;
+}
+
+td,
+th {
+  text-align: start;
+  padding-inline: 20px;
+}
+
+td {
+  color: var(--text-gray);
+  font-size: 14px;
+}
+
+table.rounded-corners > thead > tr:not(:last-child) > th,
+table.rounded-corners > thead > tr:not(:last-child) > td,
+table.rounded-corners > tbody > tr:not(:last-child) > th,
+table.rounded-corners > tbody > tr:not(:last-child) > td,
+table.rounded-corners > tfoot > tr:not(:last-child) > th,
+table.rounded-corners > tfoot > tr:not(:last-child) > td,
+table.rounded-corners > tr:not(:last-child) > td,
+table.rounded-corners > tr:not(:last-child) > th,
+table.rounded-corners > thead:not(:last-child),
+table.rounded-corners > tbody:not(:last-child),
+table.rounded-corners > tfoot:not(:last-child) {
+  border-bottom: 1px solid #ededed;
+}
+
+.welcome-section {
+  background-color: #10b3e8;
+  background-image: url('../assets/images/background/login.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.social-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  padding: 10px;
+}
+
+.bg-gray-outline {
+  border: 2px solid #e6eaf2;
+  background-color: var(--app-input-gray);
+}
+
+.react-tagsinput-tag-div {
+  background-color: #e8e4e4;
+  padding: 5px;
+  border: 1px solid #dcd6d6;
+  border-radius: 5px;
+  margin: 5px;
+}
+
+.react-tagsinput-input {
+  margin: 5px;
+}
+
+.react-tagsinput-remove {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.react-tagsinput-tag {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  overflow-wrap: anywhere;
+}
+
+.logo.inline {
+  max-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.inline-app-loader {
+  width: 18px;
+  aspect-ratio: 1;
+  margin-right: 10px;
+  display: inline-grid;
+  border-radius: 50%;
+  background:
+    linear-gradient(0deg ,rgb(255 255 255/50%) 30%,#0000 0 70%,rgb(255 255 255/100%) 0) 50%/8% 100%,
+    linear-gradient(90deg,rgb(255 255 255/25%) 30%,#0000 0 70%,rgb(255 255 255/75% ) 0) 50%/100% 8%;
+  background-repeat: no-repeat;
+  animation: l23 1s infinite steps(12);
+}
+
+.inline-app-loader.dark {
+  background:
+    linear-gradient(0deg, rgb(0 0 0/50%) 30%, #0000 0 70%, rgb(0 0 0/100%) 0) 50%/8% 100%,
+    linear-gradient(90deg, rgb(0 0 0/25%) 30%, #0000 0 70%, rgb(0 0 0/75%) 0) 50%/100% 8%;
+  background-repeat: no-repeat;
+}
+
+.inline-app-loader::before,
+.inline-app-loader::after {
+   content: "";
+   grid-area: 1/1;
+   border-radius: 50%;
+   background: inherit;
+   opacity: 0.915;
+   transform: rotate(30deg);
+}
+.inline-app-loader::after {
+   opacity: 0.83;
+   transform: rotate(60deg);
+}
+@keyframes l23 {
+  100% {transform: rotate(1turn)}
+}
+
+.direction-rtl {
+  direction: rtl;
+}
+.direction-ltr {
+  direction: ltr;
+}
+
+input {
+  outline: none;
+}
+input:focus {
+  outline: none;
+}

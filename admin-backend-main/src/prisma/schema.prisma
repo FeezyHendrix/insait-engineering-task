@@ -1,0 +1,405 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChatChannel {
+  WEB
+  WHATSAPP
+  SMS
+}
+
+model Interaction {
+  conversationId               String               @id
+  userId                       String
+  chatProduct                  String?
+  startedTime                  DateTime
+  endTime                      DateTime?
+  avgResponseTimePerQuery      Float
+  endStatus                    String
+  positivenessScore            Float
+  complexityScore              Float
+  speed                        Int
+  messages                     Json
+  comment                      String
+  User                         User?                @relation(fields: [userId], references: [userId])
+  Product                      Product?             @relation(fields: [productId], references: [id])
+  productId                    String?
+  botSuccess                   Boolean?
+  totalCompletionTokensUsed    Int?
+  totalPromptTokensUsed        Int?
+  UnansweredQuestion           UnansweredQuestion[]
+  queryKnowledgebase           Int?
+  securityViolations           Int?
+  securityPromptTokens         Int?
+  securityCompletionTokens     Int?
+  conversationCompletionTokens Int?
+  conversationPromptTokens     Int?
+  securityViolationMessages    Json?
+  userFeedback                 String?
+  userRating                   Int?
+  dataObject                   String?
+  messageCount                 Int?
+  history                      String?
+  sentiment                    String?
+  persona                      String?
+  nodes                        String[]
+  requestId                    String?
+  externalId                   String?
+  chatChannel                  ChatChannel?
+  testRunId                    String?              @unique
+  TestRun                      TestRun?
+  questions                    Question[]
+  flowId                       String?
+  Flow                         Flow?                @relation(fields: [flowId], references: [id])
+
+  @@index([userId], name: "userId")
+}
+
+model User {
+  userId                String          @unique
+  firstName             String?
+  lastName              String?
+  personaClassification String?
+  chatbotVisible        Boolean?
+  signedUp              Boolean?
+  interactions          Interaction[]
+  createdAt             DateTime?
+  isTestUser            Boolean?        @default(false)
+  userAgent             String?
+  clientSessions        ClientSession[]
+}
+
+model Product {
+  id           String        @unique
+  name         String        @unique
+  available    Boolean
+  interactions Interaction[]
+}
+
+model ChartConfig {
+  id        Int     @id @default(autoincrement())
+  chartName String  @unique
+  active    Boolean
+}
+
+model Templates {
+  templateId Int    @id @default(autoincrement())
+  title      String
+  text       String
+}
+
+model UnansweredQuestion {
+  unansweredQId  String       @id @unique
+  conversationId String
+  question       String
+  answer         String
+  reason         String
+  createdAt      String
+  archive        Boolean
+  questionHash   String?
+  answerHash     String?
+  Interaction    Interaction? @relation(fields: [conversationId], references: [conversationId])
+
+  @@unique([questionHash, answerHash, conversationId])
+}
+
+model Knowledge {
+  id        String @id @default(uuid())
+  question  String
+  answer    String?
+  url       String?
+  createdAt String
+  product   String
+  active    Boolean? @default(true)
+  type      String   @default("qa")
+}
+
+enum TicketPriority {
+  urgent
+  high
+  normal
+  low
+}
+
+enum TicketStatus {
+  toDo
+  onHold
+  inProgress
+  completed
+  deprecated
+}
+
+enum TicketRequestType {
+  bug
+  feature
+}
+
+model Support {
+  id                 Int               @id @default(autoincrement())
+  subject            String
+  sender             String
+  companyName        String
+  message            String
+  chatURL            String?
+  ticketURL          String?
+  priority           TicketPriority    @default(normal)
+  requestType        TicketRequestType @default(bug)
+  status             TicketStatus      @default(toDo)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  comments           Comment[]         @relation("SupportComments")
+  commentCount       Int               @default(0)
+  notificationEmails String[]          @default([])
+  commentHistory     String?           @default("")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  sender    String
+  createdAt DateTime @default(now())
+  support   Support  @relation("SupportComments", fields: [supportId], references: [id], onDelete: Cascade)
+  supportId Int
+}
+
+model BatchMessage {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  type      String
+  message   String
+  sender    String
+  recipient String
+  subject   String?
+}
+
+enum DocumentStatus {
+  PENDING
+  SCRAPING
+  COMPLETED
+  ERROR
+}
+
+enum DocumentType {
+  document
+  link
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model DocumentKnowledge {
+  id              String          @id @default(uuid())
+  name            String          @unique
+  type            DocumentType    @default(document)
+  url             String?         @db.VarChar(2048)
+  pagePath        String?
+  pageTitle       String?
+  pageDescription String?
+  words           Int             @default(0)
+  published       Boolean         @default(true)
+  key             String          @default("")
+  size            Int             @default(0)
+  hash            String          @unique @db.VarChar(64)
+  createdAt       DateTime        @default(now())
+  status          DocumentStatus? @default(COMPLETED)
+  crawlingJobId   String?
+  CrawlingJob     CrawlingJob?    @relation(fields: [crawlingJobId], references: [id])
+  reviewStatus    ReviewStatus?
+  hint            String?
+  r2rId           String?
+}
+
+model CrawlingJob {
+  id          String              @id @default(uuid())
+  tenant      String?
+  url         String
+  createdAt   DateTime            @default(now())
+  completedAt DateTime?
+  progress    Int
+  status      DocumentStatus?     @default(COMPLETED)
+  documents   DocumentKnowledge[]
+}
+
+enum LinkType {
+  URL
+  EMAIL
+  PHONE
+}
+
+model Link {
+  linkId String   @id
+  url    String
+  type   LinkType
+  count  Int
+}
+
+enum TestScenarioType {
+  QA
+  SESSION
+}
+
+enum TestRunStatus {
+  SUCCESS
+  FAILURE
+  PENDING
+  ERROR
+}
+
+model TestRun {
+  testRunId      String        @id @default(uuid())
+  status         TestRunStatus @default(PENDING)
+  runDate        DateTime      @default(now())
+  Interaction    Interaction?  @relation(fields: [conversationId], references: [conversationId])
+  conversationId String?       @unique
+  TestScenario   TestScenario? @relation(fields: [testScenarioId], references: [testScenarioId])
+  testScenarioId String?
+}
+
+model TestScenario {
+  testScenarioId String           @id @default(uuid())
+  name           String
+  type           TestScenarioType
+  createdAt      DateTime         @default(now())
+  questions      String[]
+  correctAnswers String[]
+  TestRun        TestRun[]
+}
+
+model UserSetting {
+  username       String   @id
+  favoriteCharts String[]
+}
+
+enum LoginProvider {
+  microsoft
+  google
+  other
+}
+
+model Cluster {
+  id                     String     @id @default(uuid())
+  representativeQuestion String
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  questions              Question[]
+}
+
+model Question {
+  id             String       @id @default(uuid())
+  clusterId      String
+  question       String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  cluster        Cluster      @relation(fields: [clusterId], references: [id])
+  conversationId String?
+  interaction    Interaction? @relation(fields: [conversationId], references: [conversationId])
+
+  @@unique([question, conversationId])
+}
+
+model Flow {
+  id           String        @unique
+  name         String
+  interactions Interaction[]
+}
+
+model ClientSession {
+  sessionId        String            @id @default(uuid())
+  userId           String
+  startTime        DateTime          @default(now())
+  endTime          DateTime?
+  totalSteps       Int               @default(0)
+  completedSteps   Int               @default(0)
+  dropOffStep      Int?
+  sessionDuration  Int?              // Duration in seconds
+  status           SessionStatus     @default(ACTIVE)
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [userId])
+  conversationSteps ConversationStep[]
+  messageLogs      MessageLog[]
+
+  @@index([userId, startTime])
+}
+
+model ConversationStep {
+  stepId          String        @id @default(uuid())
+  sessionId       String
+  stepNumber      Int
+  stepType        StepType      @default(MESSAGE)
+  stepName        String
+  entryTime       DateTime      @default(now())
+  exitTime        DateTime?
+  duration        Int?          // Duration in milliseconds
+  userInput       String?
+  botResponse     String?
+  wasSuccessful   Boolean       @default(false)
+  errorMessage    String?
+  createdAt       DateTime      @default(now())
+  session         ClientSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  messageLogs     MessageLog[]
+
+  @@unique([sessionId, stepNumber])
+  @@index([sessionId, stepNumber])
+}
+
+model MessageLog {
+  messageId       String          @id @default(uuid())
+  sessionId       String
+  stepId          String?
+  messageType     MessageType     @default(TEXT)
+  sender          MessageSender   @default(USER)
+  content         String
+  metadata        Json?
+  timestamp       DateTime        @default(now())
+  responseTime    Int?            // Response time in milliseconds
+  tokenCount      Int?
+  sentiment       String?
+  processed       Boolean         @default(false)
+  session         ClientSession   @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  step            ConversationStep? @relation(fields: [stepId], references: [stepId], onDelete: Cascade)
+
+  @@index([sessionId, timestamp])
+  @@index([sender, timestamp])
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  ERROR
+}
+
+enum StepType {
+  MESSAGE
+  INPUT
+  CHOICE
+  API_CALL
+  VALIDATION
+  REDIRECT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  BUTTON_CLICK
+  FORM_SUBMIT
+  ERROR
+}
+
+enum MessageSender {
+  USER
+  BOT
+  SYSTEM
+}

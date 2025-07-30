@@ -1,0 +1,7 @@
+body {
+    caret-color: transparent;
+}
+
+input:focus, textarea:focus, [contenteditable]:focus {
+    caret-color: auto;
+}

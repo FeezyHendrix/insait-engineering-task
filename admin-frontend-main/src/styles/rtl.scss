@@ -1,0 +1,30 @@
+html[dir="rtl"] {
+  
+  .node-container {
+    direction: rtl;
+  }
+
+  ul[role="navigation"] {
+    .previous, .next {
+      a {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .MuiFormControl-root.MuiTextField-root {
+    fieldset.MuiOutlinedInput-notchedOutline {
+      text-align: right;
+    }
+    label.MuiFormLabel-root.MuiInputLabel-root.MuiInputLabel-outlined.MuiInputLabel-shrink {
+      left: unset;
+      right: 8px;
+    }
+  }
+  
+  .conversionContainer__arror {
+    transform: rotate(90deg);
+  }
+
+  
+}

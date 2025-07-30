@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-white: #FFFFFF;
+  --app-gray: #F7F7F7;
+  --app-input-gray: #F3F5F7;
+  --text-black: #3A3A3A;
+  --text-gray: #9298A4;
+  --app-border-light: #E9EAED;
+  --app-border: #E6EAF2;
+  --app-blue: #10b3e8;
+}
+
+
+@import '@styles/layout.css';
+@import '@styles/text.css';
+@import '@styles/header.scss';
+@import '@styles/chart.css';
+@import '@styles/chat.css';
+@import '@styles/rtl.scss';
+
+@layer base {
+  
+  .premium-card {
+    @apply rounded-2xl bg-white shadow-sm border border-gray-200 p-6 transition-all duration-300 ease-in-out;
+  }
+
+  .analytics-tab-trigger {
+    @apply data-[state=active]:bg-white data-[state=active]:font-semibold data-[state=active]:shadow-sm  data-[state=active]:rounded-md py-2 text-sm data-[state=active]:text-gray-600;
+  }
+
+  .premium-card:hover {
+    @apply shadow-md;
+  }
+
+  .max-h-page-scroll-230 {
+    @apply overflow-y-auto max-h-[calc(100vh-230px)];
+  }
+
+  .max-h-page-scroll-150 {
+    @apply overflow-y-auto max-h-[calc(100vh-150px)];
+  }
+  
+}

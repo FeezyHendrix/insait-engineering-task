@@ -1,0 +1,65 @@
+
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  color: var(--text-black);
+  margin: 0;
+}
+
+.bold-text {
+  font-family: var(--font-bold);
+}
+
+.bolder-text {
+  font-family: var(--font-bolder);
+}
+
+.text-gray {
+  color: var(--text-gray);
+}
+
+.app-text-blue {
+  color: var(--app-blue);
+}
+
+.sn-dot {
+  width: 19px;
+  height: 19px;
+  background-color: #e7f2f9;
+  border-radius: 10px;
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+}
+
+.sender-row {
+  background-color: #10bbea1a;
+  justify-self: end;
+  margin-inline-start: auto;
+  width: fit-content;
+}
+.receiver-row {
+  background-color: #f1f5f9;
+  color: #0f1729;
+}
+
+.copy-icon {
+  background: rgba(146, 152, 164, 0.30);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+}
+
+.light-deep-gray {
+  background: #D9D9D94D;
+
+}
+
+.app-word-break {
+  word-break: break-word;
+}

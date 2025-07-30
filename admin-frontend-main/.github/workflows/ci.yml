@@ -1,0 +1,158 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: ['main']
+    tags: ['*.*.*']
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  code-testing:
+    name: Code Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Branch Connected To ClickUp
+        uses: insait-io/github-actions/.github/actions/validate-clickup-branch@main
+
+      - name: Modify /etc/hosts
+        run: sudo sed -i '/127.0.0.1 localhost/a127.0.0.1 test-company.insait.com' /etc/hosts
+        shell: bash
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run git outdated
+        if: github.event_name == 'pull_request'
+        run: npm outdated
+        continue-on-error: true
+
+      - name: Scan npm packages
+        run: npm audit
+        continue-on-error: true
+
+      - name: Check Type Errors
+        run: npm run type-check
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Build
+        run: npm run build
+
+      - name: Run Playwright Tests With Covarage Report
+        env:
+          VITE_MSW_ENABLED: true
+          VITE_MODE: 'development'
+        run: npm run test:coverage
+
+      - name: Upload test traces of failed tests
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failed-test-videos
+          path: ./test-results/**/trace.zip
+
+  push-to-ecr:
+    name: Push To ECR
+    runs-on: ubuntu-latest
+    needs: code-testing
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Tag Name
+        uses: little-core-labs/get-git-tag@v3.0.1
+        id: tagName
+
+      - name: Set Deployment Environment
+        run: |
+          if [[ -z $GIT_TAG_NAME ]]; then
+            echo "DEPLOYMENT_ENVIRONMENT=Staging" >> $GITHUB_ENV
+          else
+            echo "DEPLOYMENT_ENVIRONMENT=Production" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy destination
+        run: |
+          echo $GIT_TAG_NAME
+          [[ -z $GIT_TAG_NAME ]] && echo Deploying to Staging || echo Deploying $GIT_TAG_NAME to Prod
+          [[ -z $GIT_TAG_NAME ]] && echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_STG_ACCESS_KEY_ID }} >> $GITHUB_ENV || echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_PROD_ACCESS_KEY_ID }} >> $GITHUB_ENV
+          [[ -z $GIT_TAG_NAME ]] && echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_STG_SECRET_ACCESS_KEY }} >> $GITHUB_ENV || echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }} >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Register ECR_REGISTRY To Environment
+        run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Get version
+        id: get-version
+        run: echo "VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+
+      - name: Determine build mode
+        run: |
+          if [[ ${{ github.ref }} == refs/tags/* ]]; then
+            echo "BUILD_MODE=production" >> $GITHUB_ENV
+          else
+            echo "BUILD_MODE=staging" >> $GITHUB_ENV
+          fi
+
+      - name: Build Frontend image
+        run: docker build -t ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest --build-arg VERSION='${{ env.VERSION }}' .
+
+      - name: Run Snyk to check Docker image for vulnerabilities
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYKAUTHTOKEN }}
+        with:
+          image: ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest
+          args: --severity-threshold=high
+        continue-on-error: false
+
+      - name: Push to ECR
+        run: |
+          docker tag ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:${{ env.VERSION }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:${{ env.VERSION }}
+
+      - name: Notify Slack on Success
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE_ON_SUCCESS: '${{ github.event.repository.name }} deployed [SUCCESSFULLY] to ${{ env.DEPLOYMENT_ENVIRONMENT }}'
+          SLACK_MESSAGE_ON_FAILURE: '${{ github.event.repository.name }} deployment [FAILED] to ${{ env.DEPLOYMENT_ENVIRONMENT }}'
+          SLACK_TITLE: 'Deployment status - ${{ steps.tagName.outputs.tagName }}'
+          SLACK_WEBHOOK: ${{ secrets.DEPLOYMENT_STATUS_SLACK_WEBHOOK_URL }}
+          SLACK_FOOTER: ''
+
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: push-to-ecr
+    if: ${{ github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Agent Deployment Repository Dispatch
+        uses: insait-io/github-actions/.github/actions/repository-dispatch@main
+        with:
+          app_id: ${{ secrets.INSAIT_BOT_APP_ID }}
+          private_key: ${{ secrets.INSAIT_BOT_APP_PRIVATE_KEY }}
+          owner: insait-io
+          repo: agent-deployment
+          event_type: staging-admin-frontend-deployment

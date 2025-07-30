@@ -1,0 +1,18 @@
+.marginTop5px {
+    margin-top: 5px;
+}
+
+.heightAndOverflowY { 
+    max-height: 100px;
+    overflow-y: auto ;
+    text-overflow: auto;
+}
+
+#tooltip-message {
+    width: 20rem;
+}
+
+.optionsOpen {
+    top: -15rem;
+    max-height: 15rem;
+}

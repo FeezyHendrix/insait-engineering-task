@@ -1,0 +1,1 @@
+export const defaultPageUrl = 'http://localhost:5173';

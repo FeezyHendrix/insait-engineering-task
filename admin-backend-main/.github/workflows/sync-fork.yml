@@ -1,0 +1,58 @@
+# Sync Fork Workflow
+#
+# This GitHub Action workflow synchronizes a forked repository with its upstream (parent) repository.
+# It can be manually triggered via the `workflow_dispatch` event and performs the following tasks:
+#
+# 1. **Run on Fork Only**: Prints a message if the repository is a fork.
+# 2. **Sync Repository**: Fetches upstream repository details and uses `repo-sync/github-sync` to synchronize branches and tags.
+#
+# **Secrets Required**:
+# - `GITHUB_TOKEN`: Automatically provided by GitHub for API interactions.
+# - `PAT`: A personal access token (PAT) with `repo` and `workflow` scopes, used for syncing. Must be set in repository secrets.
+#
+# **Usage**:
+# - Designed for forked repositories to stay in sync with their parent repositories.
+# - Ensure `PAT` is configured in repository secrets before running.
+
+name: Sync Fork Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-on-fork-only:
+    name: Check If This Is A Forked Repository
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork == true }}
+    steps:
+      - name: Print a message
+        run: echo "This job is running because the repository is a fork!"
+      - name: Exit if not a fork
+        if: ${{ github.event.repository.fork != true }}
+        run: echo "This job is not running because the repository is not a fork."
+
+  repo-sync:
+    name: Repository Sync
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork == true }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Get parent repository information
+        id: get_upstream
+        run: |
+          echo "Fetching upstream repository details..."
+          UPSTREAM_REPO=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              https://api.github.com/repos/${{ github.repository }} | jq -r '.parent.full_name')
+              echo "UPSTREAM_REPO=$UPSTREAM_REPO" >> $GITHUB_ENV
+
+              
+      - name: Sync repository with tags
+        uses: repo-sync/github-sync@v2
+        with:
+         source_repo: "https://${{ secrets.PAT }}@github.com/${{ env.UPSTREAM_REPO }}.git"
+         source_branch: "*"
+         destination_branch: "*"
+         sync_tags: "true"
+         github_token: ${{ secrets.PAT }}

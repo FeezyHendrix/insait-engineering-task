@@ -1,0 +1,48 @@
+#userPersona
+  .apexcharts-legend.apexcharts-align-center.apx-legend-position-right {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 30px;
+}
+
+.recharts-legend-item {
+  margin-bottom: 20px;
+}
+
+.recharts-funnel-trapezoid {
+  margin-bottom: 50px !important;
+}
+
+.apexcharts-tooltip {
+  background: #ffffff;
+  color: #3a3a3a;
+}
+
+svg.star-svg {
+  display: inline;
+}
+
+.MuiInputLabel-root.Mui-error {
+  color: rgba(0, 0, 0, 0.6) !important;
+  
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: rgba(0, 0, 0, 0.23) !important;
+}
+
+.MuiStack-root {
+  width: 120%;
+}
+
+.MuiFormControl-root.MuiTextField-root {
+  min-width: 0 !important;
+}
+
+.MuiOutlinedInput-root {
+  width: 80% !important;
+}
+
+.MuiInputAdornment-root {
+  margin-inline-start: 0 !important;
+}

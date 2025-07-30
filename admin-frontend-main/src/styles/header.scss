@@ -1,0 +1,35 @@
+
+.line {
+  background-color: var(--app-border-light);
+}
+
+.app-bg-blue  {
+  background-color: var(--app-blue);
+}
+
+.notification-container {
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background-color: var(--app-input-gray);
+  padding: 12px;
+}
+
+.chat-container {
+  border-radius: 10px;
+border: 1px solid #CDE5F3;
+background:  #FFF;
+padding: 7px;
+}
+
+.nav-active > .nav-list-item {
+  border-radius: 10px;
+  background-color: var(--app-blue);
+
+  span {
+    color: var(--app-white);
+  }
+}
+
+.nav-title {
+  white-space: nowrap;
+}

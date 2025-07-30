@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# set -e
+
+# if [[ "$(uname)" == "Darwin" ]]; then
+#   GITLEAKS_PATH="/opt/homebrew/bin/gitleaks"  # Mac
+
+# elif [[ "$(uname)" == "Linux" ]]; then
+#   GITLEAKS_PATH="/usr/local/bin/gitleaks"
+# else
+#   GITLEAKS_PATH="../gitleaks_folder/gitleaks"     # Windows 
+# fi
+
+# exec "$GITLEAKS_PATH" protect --staged -v

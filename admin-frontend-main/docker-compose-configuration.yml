@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  configuration-db:
+    container_name: configuration-db
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=user
+      - POSTGRES_DB=configuration-db
+    volumes:
+      - configuration_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d configuration-db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  configuration-service:
+    container_name: configuration-service
+    image: 211125495813.dkr.ecr.us-east-2.amazonaws.com/platform-configuration
+    ports:
+      - 4000:4000
+    depends_on:
+      - configuration-db
+    environment:
+      - PORT=4000
+      - JWT_USER_SECRET=b8ad485993e71601bdfcb7001ffee6b2a3590264ab1db31ed2b89aa24771d481
+      - JWT_ADMIN_SECRET=dbf2d2f678e5c31cc013974a51ac21efa296a7f7e28c7bf0f590115adc732cde
+      - DATABASE_URL=postgresql://user:password@configuration-db:5432/configuration-db
+
+volumes:
+  configuration_data:

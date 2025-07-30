@@ -1,0 +1,190 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches: ['main']
+    tags: ['*.*.*']
+
+jobs:
+  code-testing:
+    name: Code Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Branch Connected To ClickUp
+        uses: insait-io/github-actions/.github/actions/validate-clickup-branch@main
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install wait-on
+        run: npm install -g wait-on
+
+      - name: Install Backend Dependencies
+        run: npm ci
+
+      - name: Scan npm packages
+        run: npm audit
+        continue-on-error: true
+
+      - name: Generate Prisma Setup
+        run: npm run prisma:generate
+
+      - name: Build Backend
+        run: npm run build
+
+      - name: Modify /etc/hosts
+        run: sudo sed -i '/127.0.0.1 localhost/a127.0.0.1 test-company.insait.com' /etc/hosts
+        shell: bash
+
+      - name: Allow Local Setup Script
+        run: chmod +x local_setup.sh
+
+      - name: Build and Run Database Dockers
+        run: ./local_setup.sh seed
+        env:
+          DATABASE_URL: postgresql://root:1234@test-company.insait.com:5400/analyticsDatabase
+
+      - name: Run Backend
+        env:
+          RUN_MODE: DEV_SEED
+          COMPANY_CONFIG_BASE_URL: http://localhost:4000
+          DATABASE_URL: postgresql://root:1234@test-company.insait.com:5400/analyticsDatabase
+          BACKEND_URL: test-company.insait.com:5050
+          COMPANY_CONFIG_SECRET: ${{ secrets.COMPANY_CONFIG_SECRET }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_TO_PHONE: ${{ secrets.TWILIO_TO_PHONE }}
+          MESSAGE_SERVICES_ID: ${{ secrets.MESSAGE_SERVICES_ID }}
+          # BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          # BREVO_SENDER_EMAIL_ADDRESS: ${{ secrets.BREVO_SENDER_EMAIL_ADDRESS }}
+          AWS_ACCESS_KEY_ID: test # value for localstack
+          AWS_SECRET_ACCESS_KEY: test # value for localstack
+          AWS_REGION: us-east-1 # value for localstack
+          AWS_S3_BUCKET_NAME: demo-bucket
+          LOCALSTACK_ENDPOINT_URL: http://localhost:4566 # value for localstack
+
+        run: npm run dev > backend.log 2>&1 &
+
+      - name: Wait for Backend
+        run: wait-on http://test-company.insait.com:5050/health -t 180000
+
+      - name: Check Backend Health
+        run: curl -I http://test-company.insait.com:5050/health
+
+      - name: Run Jest tests
+        env:
+          RUN_MODE: DEV_SEED
+          COMPANY_CONFIG_BASE_URL: http://localhost:4000
+          DATABASE_URL: postgresql://root:1234@test-company.insait.com:5400/analyticsDatabase
+          BACKEND_URL: test-company.insait.com:5050
+          COMPANY_CONFIG_SECRET: ${{ secrets.COMPANY_CONFIG_SECRET }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_TO_PHONE: ${{ secrets.TWILIO_TO_PHONE }}
+          MESSAGE_SERVICES_ID: ${{ secrets.MESSAGE_SERVICES_ID }}
+          # BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          # BREVO_SENDER_EMAIL_ADDRESS: ${{ secrets.BREVO_SENDER_EMAIL_ADDRESS }}
+        run: npm test
+
+      - name: Run git outdated
+        if: github.event_name == 'pull_request'
+        run: npm outdated
+        continue-on-error: true
+
+  push-to-ecr:
+    name: Push To ECR
+    runs-on: ubuntu-latest
+    needs: code-testing
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Tag Name
+        uses: little-core-labs/get-git-tag@v3.0.1
+        id: tagName
+
+      - name: Set Deployment Environment
+        run: |
+          if [[ -z $GIT_TAG_NAME ]]; then
+            echo "DEPLOYMENT_ENVIRONMENT=Staging" >> $GITHUB_ENV
+          else
+            echo "DEPLOYMENT_ENVIRONMENT=Production" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy destination
+        run: |
+          echo $GIT_TAG_NAME
+          [[ -z $GIT_TAG_NAME ]] && echo Deploying to Staging || echo Deploying $GIT_TAG_NAME to Prod
+          [[ -z $GIT_TAG_NAME ]] && echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_STG_ACCESS_KEY_ID }} >> $GITHUB_ENV || echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_PROD_ACCESS_KEY_ID }} >> $GITHUB_ENV
+          [[ -z $GIT_TAG_NAME ]] && echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_STG_SECRET_ACCESS_KEY }} >> $GITHUB_ENV || echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }} >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Register ECR_REGISTRY To Environment
+        run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Get version
+        id: get-version
+        run: echo "VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+
+      - name: Build image
+        run: docker build -t ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest --build-arg VERSION='${{ env.VERSION }}' -f Dockerfile .
+
+      - name: Scan with Trivy
+        uses: insait-io/github-actions/.github/actions/docker-trivy-scan-and-notify@main
+        with:
+          slack-token: ${{ secrets.DEPLOYMENT_STATUS_SLACK_WEBHOOK_URL }}
+          image: ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest
+          severity: high
+          continue-on-error: true
+
+      - name: Push to ECR
+        run: |
+          docker tag ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:${{ env.VERSION }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ secrets.AWS_ECR_REPOSITORY }}:${{ env.VERSION }}
+
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: push-to-ecr
+    if: ${{ github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: Agent Deployment Repository Dispatch
+        uses: insait-io/github-actions/.github/actions/repository-dispatch@main
+        with:
+          app_id: ${{ secrets.INSAIT_BOT_APP_ID }}
+          private_key: ${{ secrets.INSAIT_BOT_APP_PRIVATE_KEY }}
+          owner: insait-io
+          repo: agent-deployment
+          event_type: staging-admin-api-deployment
+
+      - name: Notify Slack on Success
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE_ON_SUCCESS: '${{ github.event.repository.name }} deployed [SUCCESSFULLY] to ${{ env.DEPLOYMENT_ENVIRONMENT }}'
+          SLACK_MESSAGE_ON_FAILURE: '${{ github.event.repository.name }} deployment [FAILED] to ${{ env.DEPLOYMENT_ENVIRONMENT }}'
+          SLACK_TITLE: 'Deployment status - ${{ steps.tagName.outputs.tagName }}'
+          SLACK_WEBHOOK: ${{ secrets.DEPLOYMENT_STATUS_SLACK_WEBHOOK_URL }}
+          SLACK_FOOTER: ''

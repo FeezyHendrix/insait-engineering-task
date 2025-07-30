@@ -1,0 +1,108 @@
+.measure_container {
+  background-image: url("../../../assets/images/background/duration.svg");
+  background-size: cover;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  border-bottom: 5px solid #F8B11B;
+}
+
+.blue_measure_container {
+  background-blend-mode: exclusion;
+  border-bottom: 5px solid #187AF2;
+
+}
+.main-container {
+  display: flex;
+  width: 100%;
+  border-radius: 10px;
+  height: fit-content;
+  margin-bottom: 20px;
+}
+
+.main-small-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 20px;
+  margin: 5px;
+}
+
+.container {
+  background-color: #E6F1F8;
+  border-radius: 20px;
+  width: 100%;
+  height: 70px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.container:hover {
+  cursor: pointer; 
+}
+
+.container_opened {
+  height: fit-content;
+  align-items: flex-start;
+  flex-direction: column;
+  padding-bottom: 50px;
+}
+
+.conversionContainer__charts-container {
+  display: flex;
+  flex-wrap: wrap;
+
+  
+}
+
+.conversionContainer__btn {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  height: 20px;  
+}
+
+.conversionContainer__btn:hover {
+  opacity: 0.7;
+}
+
+.main-small-container__result {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.main-small-container__title {
+  font-size: 22px;
+  text-align: center;
+}
+
+.conversionContainer__title {
+  margin-inline-start: 10px;
+}
+
+.conversionContainer__arror {
+  width: 15px;
+  height: 15px;
+  transform: rotate(-90deg);
+}
+
+.conversionContainer__arror_active {
+  transform: rotate(0deg);
+}
+
+.conversionContainer__chart {
+  display: none;
+}
+
+.conversionContainer__chart_active {
+  display: flex;
+  margin-top: 40px;
+  margin-inline-start: 10px;
+  border-radius: 20px;
+}

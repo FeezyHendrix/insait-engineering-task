@@ -1,0 +1,44 @@
+.inbox-chip {
+  border-radius: 30px;
+  background: #d0edff;
+  padding: 4px 8px;
+  height: fit-content;
+}
+
+.inbox-counter {
+  background-color: #ff4f4f;
+  color: var(--app-white);
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button:disabled {
+  background-color: var(--app-border);
+  cursor: not-allowed;
+}
+
+button.conversation-icon {
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background-color: var(--app-input-gray);
+}
+
+.audio-recorder,
+.audio-recorder:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  opacity: 0.4;
+}
+
+.live-chat-message {
+  max-width: 70%;
+}
+
+.chats-conversation-container {
+  height: calc(100vh - 150px);
+  overflow: hidden;
+}
